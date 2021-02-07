@@ -9,6 +9,10 @@ class StatsGatherer {
 
   val machineName: String = systemInfo.getOperatingSystem.getNetworkParams.getHostName
 
+  /**
+   * Collects system stats values that we're interested in.
+   * @return list of key, value pairs representing current state of the monitored system
+   */
   def getCurrentStats(): List[(String, Double)] = {
     List(
       key(machineName, "memory.available") -> systemInfo.getHardware.getMemory.getAvailable.toDouble,
