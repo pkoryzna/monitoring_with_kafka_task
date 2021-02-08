@@ -24,3 +24,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 libraryDependencies += "org.postgresql" % "postgresql" % "42.2.18"
 libraryDependencies += "org.flywaydb" % "flyway-core" % "7.5.2"
 libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "3.5.0"
+
+// testing
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
