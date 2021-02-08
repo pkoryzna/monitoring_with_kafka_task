@@ -2,7 +2,7 @@ package com.koryzna.statconsumer
 
 import com.koryzna.statproducer.model.stats.StatsRecord
 import com.typesafe.scalalogging.Logger
-import org.apache.kafka.clients.consumer.{ConsumerRecords, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{Consumer, ConsumerRecords, KafkaConsumer}
 import org.flywaydb.core.Flyway
 import scalikejdbc.ConnectionPool
 
@@ -51,46 +51,41 @@ object ConsumerApp {
     val consumer: KafkaConsumer[String, Array[Byte]] = createConsumer(bootstrapServers, groupId, topicName)
 
     val consumerTask = new ConsumerTask(consumer, 5.seconds, JDBCRepository)
+    val canceled = new AtomicBoolean(false)
+
     sys.addShutdownHook {
       logger.warn("Shutting down consumer loop")
-      consumerTask.cancel()
+      canceled.set(true)
     }
 
-    consumerTask.run()
+    while (!canceled.get()) {
+      consumerTask.run()
+    }
 
     logger.warn("Shutting down Kafka consumer")
     consumer.close(30.seconds.toJava)
-
     logger.info("Consumer shut down. Goodbye!")
   }
 }
 
 
 class ConsumerTask(
-  kafkaConsumer: KafkaConsumer[String, Array[Byte]],
+  kafkaConsumer: Consumer[String, Array[Byte]],
   pollingPeriod: FiniteDuration,
   repository: StatsRepository,
 ) {
   private val logger: Logger = Logger("ConsumerTask")
-  private val canceled = new AtomicBoolean(false)
-
-  /**
-   * Polls Kafka consumer for new records and inserts them into repository.
-   * This will block until cancel() is called (from a shutdown hook).
-   */
   def run(): Unit = {
-    while (!canceled.get()) {
-      val kafkaRecords = kafkaConsumer.poll(pollingPeriod.toJava)
-      val parsed = parseProtoRecords(kafkaRecords)
+    val kafkaRecords = kafkaConsumer.poll(pollingPeriod.toJava)
 
-      repository.insertStatsRecords(parsed)
-      kafkaConsumer.commitSync(5.seconds.toJava)
-    }
-  }
+    val startTime = System.currentTimeMillis()
 
-  /** Cancels the consumer task started by run(). */
-  def cancel(): Unit = {
-    canceled.set(false)
+    val parsed = parseProtoRecords(kafkaRecords)
+
+    repository.insertStatsRecords(parsed)
+    kafkaConsumer.commitSync(5.seconds.toJava) // FIXME configure this
+
+    logger.debug(s"Inserted ${parsed.length} records in ${System.currentTimeMillis() - startTime} ms")
   }
 
   def parseProtoRecords(kafkaRecords: ConsumerRecords[String, Array[Byte]]): List[StatsRecord] = {
