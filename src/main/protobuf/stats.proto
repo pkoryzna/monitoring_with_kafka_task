@@ -1,0 +1,9 @@
+syntax = "proto3";
+package com.koryzna.statproducer.model;
+
+message StatsRecord {
+  string machine_name = 1;
+  string stat_name = 2;
+  int64 machine_epoch_timestamp = 3;
+  double value = 4;
+}

@@ -4,6 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.13.4"
 
+// https://github.com/scalapb/ScalaPB#installing
+Compile / PB.targets := Seq(
+  scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+)
+
 lazy val KafkaVersion = "2.7.0"
 
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % KafkaVersion

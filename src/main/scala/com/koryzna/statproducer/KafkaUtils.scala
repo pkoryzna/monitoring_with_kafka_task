@@ -9,7 +9,7 @@ import java.util.Properties
 object KafkaUtils {
   val logger: Logger = Logger("KafkaUtils")
 
-  def createProducer(bootstrapServers: String) = {
+  def createProducer(bootstrapServers: String): KafkaProducer[String, Array[Byte]] = {
     logger.info(s"Starting Kafka producer with bootstrap servers $bootstrapServers")
 
     val props = new Properties()
@@ -18,18 +18,12 @@ object KafkaUtils {
     props.put("retries", Int.box(0))
     props.put("linger.ms", Int.box(1))
 
-    // FIXME: this could use a more efficient encoding in a real system.
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
 
-    val producer = new KafkaProducer[String, String](props)
+    val producer = new KafkaProducer[String, Array[Byte]](props)
 
     producer
   }
 
-  def statsToRecords(stats: List[(String, Double)], topicName: String): List[ProducerRecord[String, String]] = {
-    stats.map{ case (key, statValue) =>
-      new ProducerRecord[String, String](topicName, key, statValue.toString)
-    }
-  }
 }

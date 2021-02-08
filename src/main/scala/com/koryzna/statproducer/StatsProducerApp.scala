@@ -1,5 +1,6 @@
 package com.koryzna.statproducer
 
+import com.koryzna.statproducer.model.stats.StatsRecord
 import com.typesafe.scalalogging.Logger
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 
@@ -9,12 +10,12 @@ import scala.jdk.DurationConverters._
 
 object StatsProducerApp {
   val logger: Logger = Logger("StatsProducerApp")
-  val timerPeriod: FiniteDuration = 30.seconds
+  val timerPeriod: FiniteDuration = 1.second
 
   val bootstrapServers: String = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
   def main(args: Array[String]): Unit = {
-    val topicName = "stats_strings"
+    val topicName = "stats_proto"
 
     val statsGatherer = new StatsGatherer()
 
@@ -23,8 +24,11 @@ object StatsProducerApp {
     val timer = new Timer("stats-gather-timer")
     val task: TimerTask = new TimerTask {
       override def run(): Unit = {
-        val stats = statsGatherer.getCurrentStats()
-        KafkaUtils.statsToRecords(stats, topicName).foreach(producer.send)
+        for {
+          stat <- statsGatherer.getCurrentStats()
+          serialized = stat.toByteArray
+          record = statsRecordToKafka(topicName, stat, serialized)
+        } producer.send(record)
       }
     }
 
@@ -38,5 +42,9 @@ object StatsProducerApp {
       producer.close(10.seconds.toJava)
       logger.warn("All shut down, goodbye!")
     }
+  }
+
+  def statsRecordToKafka(topicName: String, stat: StatsRecord, serialized: Array[Byte]): ProducerRecord[String, Array[Byte]] = {
+    new ProducerRecord(topicName, s"${stat.machineName}/${stat.statName}", serialized)
   }
 }
