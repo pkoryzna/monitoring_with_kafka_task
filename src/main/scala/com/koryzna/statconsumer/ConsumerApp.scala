@@ -1,7 +1,8 @@
 package com.koryzna.statconsumer
 
+import com.koryzna.statconsumer.model.StatRecord
 import com.typesafe.scalalogging.Logger
-import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerRecords, KafkaConsumer}
 
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
@@ -14,31 +15,15 @@ import scala.util.{Failure, Success, Try}
 object ConsumerApp {
   val logger: Logger = Logger("ConsumerApp")
 
-
   def handleKafkaRecords(records: ConsumerRecords[String, String]): List[StatRecord] = {
     val buf = ListBuffer[StatRecord]()
     records.forEach { record =>
-      convertKafkaRecord(record) match {
+      StatRecord.parseFromKafka(record.key(), record.value()) match {
         case Success(sr) => buf.append(sr)
         case Failure(ex) => logger.error("Failed to convert record", ex)
       }
     }
     buf.toList
-  }
-
-  def convertKafkaRecord(record: ConsumerRecord[String, String]): Try[StatRecord] = {
-    val decodedKeyTry = record.key().split("\\$") match {
-      case Array(machineName, statName) => Success((machineName, statName))
-      case _ => Failure(new IllegalArgumentException(s"Key [${record.key()}] had unexpected format"))
-    }
-
-    val decodedValueTry = Try(record.value().toDouble)
-      .recoverWith { _ => Failure(new IllegalArgumentException(s"Value [${record.value()}] could not be parsed as Double for key [${record.key()}]")) }
-
-    for {
-      (machineName, statName) <- decodedKeyTry
-      doubleValue <- decodedValueTry
-    } yield StatRecord(machineName, statName, doubleValue)
   }
 
   private def createConsumer(bootstrapServers: String, groupId: String, topicName: String): KafkaConsumer[String, String] = {
@@ -88,4 +73,3 @@ object ConsumerApp {
 }
 
 
-case class StatRecord(machineName: String, statName: String, value: Double)
