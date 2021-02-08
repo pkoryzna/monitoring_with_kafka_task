@@ -19,3 +19,7 @@ libraryDependencies += "com.github.oshi" % "oshi-core" % "5.4.1"
 // logging
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+
+// DB stuff
+libraryDependencies += "org.postgresql" % "postgresql" % "42.2.18"
+libraryDependencies += "org.flywaydb" % "flyway-core" % "7.5.2"

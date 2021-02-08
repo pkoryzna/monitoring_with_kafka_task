@@ -3,6 +3,7 @@ package com.koryzna.statconsumer
 import com.koryzna.statproducer.model.stats.StatsRecord
 import com.typesafe.scalalogging.Logger
 import org.apache.kafka.clients.consumer.{ConsumerRecords, KafkaConsumer}
+import org.flywaydb.core.Flyway
 
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
@@ -45,7 +46,15 @@ object ConsumerApp {
 
   def main(args: Array[String]): Unit = {
     val bootstrapServers: String = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-    val groupId: String = sys.env.getOrElse("KAFKA_CONSUMER_GROUP_ID", "localhost:9092")
+    val groupId: String = sys.env.getOrElse("KAFKA_CONSUMER_GROUP_ID", "stats_consumer")
+
+    // FIXME refactor, make a proper case class for config
+    val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://localhost/postgres")
+    val dbUser = sys.env.getOrElse("DB_USER", "postgres")
+    val dbPassword = sys.env("DB_PASSWORD")
+
+    val flyway = Flyway.configure().dataSource(dbUrl, dbUser, dbPassword).load()
+    flyway.migrate()
 
     val topicName: String = "stats_proto"
 
