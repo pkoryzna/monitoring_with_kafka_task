@@ -2,7 +2,7 @@ name := "statproducer"
 
 ThisBuild / version := "0.1"
 ThisBuild / scalaVersion := "2.13.4"
-
+ThisBuild / maintainer := "patryk@koryzna.com"
 
 lazy val root = (project in file("."))
   .aggregate(common, producer, consumer)
@@ -16,15 +16,25 @@ lazy val common = (project in file("common")).settings(
   libraryDependencies ++= CommonDependencies
 )
 
-lazy val producer = (project in file("producer")).settings(
-  libraryDependencies ++= CommonDependencies,
-  libraryDependencies ++= ProducerDependencies
-).dependsOn(common)
+lazy val producer = (project in file("producer"))
+  .enablePlugins(UniversalPlugin, JavaAppPackaging)
+  .settings(
+    libraryDependencies ++= CommonDependencies,
+    libraryDependencies ++= ProducerDependencies
+  ).dependsOn(common)
 
-lazy val consumer = (project in file("consumer")).settings(
-  libraryDependencies ++= CommonDependencies,
-  libraryDependencies ++= ConsumerDependencies
-).dependsOn(common)
+lazy val consumer = (project in file("consumer"))
+  .enablePlugins(DockerPlugin, JavaAppPackaging)
+  .settings(
+    libraryDependencies ++= CommonDependencies,
+    libraryDependencies ++= ConsumerDependencies,
+    packageName := "pkoryzna/statconsumer",
+    dockerLabels ++= Map(
+      "maintainer" -> maintainer.value
+    ),
+    Docker / dockerUpdateLatest := true
+  )
+  .dependsOn(common)
 
 
 lazy val CommonDependencies = Seq(
