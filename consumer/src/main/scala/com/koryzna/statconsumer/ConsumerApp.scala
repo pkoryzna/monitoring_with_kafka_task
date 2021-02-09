@@ -1,56 +1,46 @@
 package com.koryzna.statconsumer
 
 import com.koryzna.statproducer.model.stats.StatsRecord
+import com.koryzna.statproducer.utils.KafkaUtils
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import org.apache.kafka.clients.consumer.{Consumer, ConsumerRecords, KafkaConsumer}
 import org.flywaydb.core.Flyway
 import scalikejdbc.ConnectionPool
 
-import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
-import scala.jdk.DurationConverters._
 import scala.util.control.NonFatal
 
 object ConsumerApp {
   val logger: Logger = Logger("ConsumerApp")
 
-  private def createConsumer(bootstrapServers: String, groupId: String, topicName: String): KafkaConsumer[String, Array[Byte]] = {
-    val props = new Properties()
-    props.setProperty("bootstrap.servers", bootstrapServers)
-    props.setProperty("group.id", groupId)
-    props.setProperty("enable.auto.commit", "false")
-    props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-    props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer")
-
-    val consumer = new KafkaConsumer[String, Array[Byte]](props)
-
-    consumer.subscribe(List(topicName).asJava)
-    consumer
-  }
-
   def main(args: Array[String]): Unit = {
-    val bootstrapServers: String = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-    val groupId: String = sys.env.getOrElse("KAFKA_CONSUMER_GROUP_ID", "stats_consumer")
+    val config = ConfigFactory.load()
 
-    // FIXME refactor, make a proper case class for config
-    val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://localhost/postgres")
-    val dbUser = sys.env.getOrElse("DB_USER", "postgres")
-    val dbPassword = sys.env("DB_PASSWORD")
+    val consumerConfig = ConsumerAppConfig.fromConfig(config)
+    val dbConfig = DbConfig.fromConfig(config)
 
-    val flyway = Flyway.configure().dataSource(dbUrl, dbUser, dbPassword).load()
+    val flyway = Flyway.configure().dataSource(dbConfig.url, dbConfig.user, dbConfig.password).load()
     flyway.migrate()
 
     // Configure simple 1-connection pool for scalikejdbc
-    ConnectionPool.singleton(dbUrl, dbUser, dbPassword)
+    ConnectionPool.singleton(dbConfig.url, dbConfig.user, dbConfig.password)
 
-    val topicName: String = "stats_proto"
+    val topicName: String = config.getString("statconsumer.topic")
 
-    val consumer: KafkaConsumer[String, Array[Byte]] = createConsumer(bootstrapServers, groupId, topicName)
+    val consumer: KafkaConsumer[String, Array[Byte]] = KafkaUtils.createConsumer(config)
+    consumer.subscribe(Seq(topicName).asJava)
 
-    val consumerTask = new ConsumerTask(consumer, 5.seconds, JDBCRepository)
+
+    val consumerTask = new ConsumerTask(
+      consumer,
+      consumerConfig.pollingPeriod,
+      JDBCRepository,
+      consumerConfig.commitTimeout,
+    )
+
     val canceled = new AtomicBoolean(false)
 
     sys.addShutdownHook {
@@ -63,7 +53,7 @@ object ConsumerApp {
     }
 
     logger.warn("Shutting down Kafka consumer")
-    consumer.close(30.seconds.toJava)
+    consumer.close(consumerConfig.terminationTimeout)
     logger.info("Consumer shut down. Goodbye!")
   }
 }
@@ -71,19 +61,20 @@ object ConsumerApp {
 
 class ConsumerTask(
   kafkaConsumer: Consumer[String, Array[Byte]],
-  pollingPeriod: FiniteDuration,
+  pollingPeriod: java.time.Duration,
   repository: StatsRepository,
+  commitTimeout: java.time.Duration,
 ) {
   private val logger: Logger = Logger("ConsumerTask")
   def run(): Unit = {
-    val kafkaRecords = kafkaConsumer.poll(pollingPeriod.toJava)
+    val kafkaRecords = kafkaConsumer.poll(pollingPeriod)
 
     val startTime = System.currentTimeMillis()
 
     val parsed = parseProtoRecords(kafkaRecords)
 
     repository.insertStatsRecords(parsed)
-    kafkaConsumer.commitSync(5.seconds.toJava) // FIXME configure this
+    kafkaConsumer.commitSync(commitTimeout)
 
     logger.debug(s"Inserted ${parsed.length} records in ${System.currentTimeMillis() - startTime} ms")
   }

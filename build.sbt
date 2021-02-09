@@ -5,25 +5,26 @@ ThisBuild / scalaVersion := "2.13.4"
 
 
 lazy val root = (project in file("."))
-  .aggregate(models, producer, consumer)
+  .aggregate(common, producer, consumer)
 
 // `in file ...` can be omitted, leaving it in for clarity
-lazy val models = (project in file("models")).settings(
+lazy val common = (project in file("common")).settings(
   // https://github.com/scalapb/ScalaPB#installing
   Compile / PB.targets := Seq(
     scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-  )
+  ),
+  libraryDependencies ++= CommonDependencies
 )
 
 lazy val producer = (project in file("producer")).settings(
   libraryDependencies ++= CommonDependencies,
   libraryDependencies ++= ProducerDependencies
-).dependsOn(models)
+).dependsOn(common)
 
 lazy val consumer = (project in file("consumer")).settings(
   libraryDependencies ++= CommonDependencies,
   libraryDependencies ++= ConsumerDependencies
-).dependsOn(models)
+).dependsOn(common)
 
 
 lazy val CommonDependencies = Seq(
@@ -34,17 +35,19 @@ lazy val CommonDependencies = Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   // testing
   "org.scalactic" %% "scalactic" % "3.2.2",
-  "org.scalatest" %% "scalatest" % "3.2.2" % "test")
+  "org.scalatest" %% "scalatest" % "3.2.2" % "test",
+  // configs
+  "com.typesafe" % "config" % "1.4.1"
+)
 
 lazy val ProducerDependencies = Seq(
   // for system stats
-  "com.github.oshi" % "oshi-core" % "5.4.1",
-
+  "com.github.oshi" % "oshi-core" % "5.4.1"
 )
 
 lazy val ConsumerDependencies = Seq(
   // DB stuff
   "org.postgresql" % "postgresql" % "42.2.18",
   "org.flywaydb" % "flyway-core" % "7.5.2",
-  "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
+  "org.scalikejdbc" %% "scalikejdbc" % "3.5.0"
 )

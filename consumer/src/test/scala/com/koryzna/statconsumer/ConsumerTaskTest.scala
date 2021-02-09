@@ -9,6 +9,7 @@ import org.apache.kafka.common.TopicPartition
 
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 
 class ConsumerTaskTest extends AnyFlatSpec with Matchers {
   val testTopic = "test_topic"
@@ -20,7 +21,7 @@ class ConsumerTaskTest extends AnyFlatSpec with Matchers {
       records = records ++ statsRecords
     }
   }
-  val task = new ConsumerTask(consumer, pollingPeriod = 1.second, mockRepository)
+  val task = new ConsumerTask(consumer, 1.second.toJava, mockRepository, 1.second.toJava)
 
 
   val topicPartition = new TopicPartition(testTopic, 0)

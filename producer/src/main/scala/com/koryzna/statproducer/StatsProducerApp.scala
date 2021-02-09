@@ -1,6 +1,8 @@
 package com.koryzna.statproducer
 
 import com.koryzna.statproducer.model.stats.StatsRecord
+import com.koryzna.statproducer.utils.KafkaUtils
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import org.apache.kafka.clients.producer.{Producer, ProducerRecord}
 
@@ -12,16 +14,19 @@ import scala.util.control.NonFatal
 
 object StatsProducerApp {
   val logger: Logger = Logger("StatsProducerApp")
-  val timerPeriod: FiniteDuration = 1.second
-  val terminationTimeout: FiniteDuration = 5.seconds
-  val bootstrapServers: String = sys.env.getOrElse("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+
 
   def main(args: Array[String]): Unit = {
-    val topicName = "stats_proto"
+    val config = ConfigFactory.load()
+
+    val timerPeriod: FiniteDuration = config.getDuration("statproducer.timer.period").toScala
+    val terminationTimeout: FiniteDuration = config.getDuration("statproducer.termination.timeout").toScala
+
+    val topicName = config.getString("statproducer.topic")
 
     val statsSource = new OSHIStatsSource()
 
-    val producer = KafkaUtils.createProducer(bootstrapServers)
+    val producer = KafkaUtils.createProducer(config)
 
     // Unless we're doing a lot of I/O, like scanning log files or something like that,
     // we can keep this pool small.
