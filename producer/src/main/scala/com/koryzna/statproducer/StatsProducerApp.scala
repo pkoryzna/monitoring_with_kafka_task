@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import org.apache.kafka.clients.producer.{Producer, ProducerRecord}
 
+import java.io.File
 import java.util.concurrent.Executors
 import scala.concurrent.CancellationException
 import scala.concurrent.duration._
@@ -17,7 +18,13 @@ object StatsProducerApp {
 
 
   def main(args: Array[String]): Unit = {
-    val config = ConfigFactory.load()
+    if (args.length != 1) {
+      logger.error("This application requires a configuration file path as first argument")
+      sys.exit(1)
+    }
+
+    val config = ConfigFactory.parseFile(new File(args(0)))
+        .withFallback(ConfigFactory.load())
 
     val timerPeriod: FiniteDuration = config.getDuration("statproducer.timer.period").toScala
     val terminationTimeout: FiniteDuration = config.getDuration("statproducer.termination.timeout").toScala
