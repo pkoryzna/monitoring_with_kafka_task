@@ -1,30 +1,50 @@
 name := "statproducer"
 
-version := "0.1"
+ThisBuild / version := "0.1"
+ThisBuild / scalaVersion := "2.13.4"
 
-scalaVersion := "2.13.4"
 
-// https://github.com/scalapb/ScalaPB#installing
-Compile / PB.targets := Seq(
-  scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+lazy val root = (project in file("."))
+  .aggregate(models, producer, consumer)
+
+// `in file ...` can be omitted, leaving it in for clarity
+lazy val models = (project in file("models")).settings(
+  // https://github.com/scalapb/ScalaPB#installing
+  Compile / PB.targets := Seq(
+    scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+  )
 )
 
-lazy val KafkaVersion = "2.7.0"
+lazy val producer = (project in file("producer")).settings(
+  libraryDependencies ++= CommonDependencies,
+  libraryDependencies ++= ProducerDependencies
+).dependsOn(models)
 
-libraryDependencies += "org.apache.kafka" % "kafka-clients" % KafkaVersion
+lazy val consumer = (project in file("consumer")).settings(
+  libraryDependencies ++= CommonDependencies,
+  libraryDependencies ++= ConsumerDependencies
+).dependsOn(models)
 
-// for system stats
-libraryDependencies += "com.github.oshi" % "oshi-core" % "5.4.1"
 
-// logging
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+lazy val CommonDependencies = Seq(
+  // the most important thing ;-)
+  "org.apache.kafka" % "kafka-clients" % "2.7.0",
+  // logging
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
+  // testing
+  "org.scalactic" %% "scalactic" % "3.2.2",
+  "org.scalatest" %% "scalatest" % "3.2.2" % "test")
 
-// DB stuff
-libraryDependencies += "org.postgresql" % "postgresql" % "42.2.18"
-libraryDependencies += "org.flywaydb" % "flyway-core" % "7.5.2"
-libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "3.5.0"
+lazy val ProducerDependencies = Seq(
+  // for system stats
+  "com.github.oshi" % "oshi-core" % "5.4.1",
 
-// testing
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
+)
+
+lazy val ConsumerDependencies = Seq(
+  // DB stuff
+  "org.postgresql" % "postgresql" % "42.2.18",
+  "org.flywaydb" % "flyway-core" % "7.5.2",
+  "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
+)

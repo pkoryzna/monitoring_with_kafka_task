@@ -37,11 +37,11 @@ class ConsumerTaskTest extends AnyFlatSpec with Matchers {
 
     task.run()
 
-    mockRepository.records.length shouldEqual (1)
+    mockRepository.records.length shouldEqual 1
 
     val storedRecord = mockRepository.records.head
 
-    storedRecord shouldEqual (record)
+    storedRecord shouldEqual record
     // the offset that consumer should resume consuming from - hence + 1
     getCommittedOffset shouldEqual recordOffset + 1
   }
@@ -55,7 +55,7 @@ class ConsumerTaskTest extends AnyFlatSpec with Matchers {
 
     task.run()
 
-    mockRepository.records shouldBe (empty)
+    mockRepository.records shouldBe empty
     // the offset that consumer should resume consuming from - hence + 1
     getCommittedOffset shouldEqual recordOffset + 1
   }
@@ -72,7 +72,7 @@ class ConsumerTaskTest extends AnyFlatSpec with Matchers {
     task.run()
     val offsetAfterEmptyPoll = getCommittedOffset
 
-    mockRepository.records shouldBe (empty)
+    mockRepository.records shouldBe empty
     offsetAfterEmptyPoll shouldEqual lastCommitedOffset
 
   }
