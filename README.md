@@ -21,8 +21,8 @@ For notes on particular implementation details, see comments in [ProducerApp sou
 
 You will have to supply a configuration file as first argument to the application command line.
 
-First, your `truststore` and `keystore` files following Aiven documentation: 
-https://help.aiven.io/en/articles/489572-getting-started-with-aiven-kafka 
+Before creating your config like, prepare your `truststore` and `keystore` files by
+following Aiven documentation: https://help.aiven.io/en/articles/489572-getting-started-with-aiven-kafka 
 
 Then, create a configuration file for use with Aiven Kafka, modifying the example below:
 
