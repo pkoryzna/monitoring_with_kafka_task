@@ -1,8 +1,6 @@
 # System Monitoring app
 
-## Development
-
-### Prerequisites
+## Prerequisites
 
 You'll need the following to build and run this project:
 
@@ -152,6 +150,14 @@ docker run --env-file .env --volume /path/to/aiven_keys:/keys:ro pkoryzna/statco
 
 For development purposes you can also run the Consumer from SBT shell or your favorite IDE;
 remember to have the appropriate variables set in environment. 
+
+## Common subproject
+
+`common` contains Protobuf definitions (compiled with [ScalaPB](https://scalapb.github.io/docs/)) 
+and convenience methods for creating a Kafka Consumer and Producer. 
+
+Both applications' sbt projects include it as dependency. It will automatically get built
+on compilation.
 
 ## Misc. notes
 
