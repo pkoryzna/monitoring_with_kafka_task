@@ -27,8 +27,8 @@ class OSHIStatsSource extends StatsSource {
     List(
       StatsRecord(machineName, "memory.available", epochTimestamp, systemInfo.getHardware.getMemory.getAvailable.toDouble),
       StatsRecord(machineName, "processes.count", epochTimestamp, systemInfo.getOperatingSystem.getProcessCount.toDouble),
-      // which stats to track could be read from a config file in a real proper monitoring system,
-      // but I think these will do for this exercise
+      // In this exercise I'll be collection only those two.
+      // Which stats to track could be read from a config file in a real proper monitoring system.
     )
   }
 }
