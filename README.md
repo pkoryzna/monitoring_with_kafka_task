@@ -159,6 +159,13 @@ and convenience methods for creating a Kafka Consumer and Producer.
 Both applications' sbt projects include it as dependency. It will automatically get built
 on compilation.
 
+## Tests
+
+To run unit tests, run `sbt test`.
+
+Integration tests can be run using `scripts/intergration_test`. 
+Note that you'll need Docker Compose installed to bring up the test dependencies.
+
 ## Misc. notes
 
 ### Why read config from env vars in Consumer but not in Producer?

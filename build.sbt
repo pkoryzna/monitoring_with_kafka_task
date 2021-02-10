@@ -24,6 +24,7 @@ lazy val producer = (project in file("producer"))
   ).dependsOn(common)
 
 lazy val consumer = (project in file("consumer"))
+  .configs(IntegrationTest)
   .enablePlugins(DockerPlugin, JavaAppPackaging)
   .settings(
     libraryDependencies ++= CommonDependencies,
@@ -32,7 +33,10 @@ lazy val consumer = (project in file("consumer"))
     dockerLabels ++= Map(
       "maintainer" -> maintainer.value
     ),
-    Docker / dockerUpdateLatest := true
+    Docker / dockerUpdateLatest := true,
+    // for integration tests
+    Defaults.itSettings,
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "it,test"
   )
   .dependsOn(common)
 
