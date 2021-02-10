@@ -12,19 +12,20 @@ You'll need the following to build and run this project:
 ## Producer app 
 
 Statistics are collected using [OSHI library](https://github.com/oshi/oshi), serialized using Protobuf, 
-and sent to Kafka by `StatsProducerApp` in `producer` directory (and corresponding subproject in sbt build).
+and sent to Kafka by `StatsProducerApp` in `producer` directory (and the corresponding subproject in sbt build).
 
 The task collecting statistics is scheduled at a fixed interval of 1 second by default, which can be changed.
 For notes on particular implementation details, see comments in [ProducerApp sources](producer/src/main/scala/com/koryzna/statproducer/StatsProducerApp.scala).
 
 ### Configuration
 
-To run the application, you have to supply a path to configuration file **as first argument** to app command line.
+You will have to supply a configuration file as first argument to the application command line.
 
-Prepare your `truststore` and `keystore` files following Aiven documentation: 
+First, your `truststore` and `keystore` files following Aiven documentation: 
 https://help.aiven.io/en/articles/489572-getting-started-with-aiven-kafka 
 
-Create a configuration file for use with Aiven Kafka, modifying the example below:
+Then, create a configuration file for use with Aiven Kafka, modifying the example below:
+
 ```
 kafka {
     # Properies necessary to connect to your Kafka cluster
@@ -49,7 +50,7 @@ Optionally, you can also override those config values:
 |`statproducer.timer.period`|How often to poll for statistics|`1s`|
 |`statproducer.termination.timeout`|Timeout for Kafka Producer shutdown|`5s`|
 
-Simply add them to the config file, like this:
+To change these settings, add them to the config file, like this:
 
 ```hocon
 statproducer.topic = "my_custom_topic"
@@ -68,7 +69,7 @@ Run `sbt producer/universal:packageBin` to make the archive - you'll find it in
 
 ### Running
 
-Unzip the archive, `cd` to created directory and run the bundled launch script:
+Unzip the archive, `cd` to the created directory and run the bundled launch script:
 
 ```
 bin/producer -- /path/to/your/producer.conf
@@ -79,7 +80,7 @@ Note: `--` must be present to forward the following argument to the main method 
 For more arguments that can be passed to launch script, see [SBT Native Packager docs](https://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html#start-script-options).
 
 For development purposes you can also run the app from SBT shell or your favorite IDE, 
-simply supply the config file path as first argument.
+supply the config file path as first argument (without the `--`).
 
 
 ## Consumer
@@ -90,9 +91,9 @@ and `INSERT`s them into Postgres DB. On succesful insertion, offset will be comm
 When consumer app starts, it will perform a DB migration (using [Flyway](https://flywaydb.org/documentation/))
 to ensure that schema is up to date. You'll find the migrations in [consumer/src/main/resources/db/migration](consumer/src/main/resources/db/migration).
 
-**Ensure user you connect with to Postgres has CREATE permissions!** Otherwise migrations will fail (and the app will crash on startup.)
+**Ensure the user you connect with to Postgres has CREATE permissions!** Otherwise, migrations will fail (and the app will crash on startup.)
 
-Consumer app **will skip** records that fail to deserialize, it will log such occurence on WARN level and move onto the
+Consumer app **will skip** any records that fail to deserialize, it will log them on WARN level and move onto the
 next one. This is a deliberate decision, made to avoid crashing the app with an invalid value. 
 
 ### Database schema
@@ -110,8 +111,8 @@ CREATE TABLE stats_app.recorded_stats (
 );
 ```
 
-On conflict, `INSERT` query will ignore duplicate records and NOT overwrite existing values - 
-which could happen, for example, when consumer group name changes (resetting the offsets.)
+On conflict, the `INSERT` query will ignore duplicate records and NOT overwrite already existing values - 
+which could happen, for example, when consumer group ID changes (resetting the offsets.)
 
 ### Configuration
 
@@ -140,9 +141,9 @@ For running on dev machine, I recommend creating a `.env` file.
 
 Consumer app is packaged into a Docker image using SBT Native Packager. 
 
-Run `sbt consumer/docker:publishLocal` in project directory to build the image and publish it to your local Docker registry.
+Run `sbt consumer/docker:publishLocal` in the project directory to build the image and publish it to your local Docker registry.
 
-Once Docker image is built, run it with your environment variables, ensuring that key files are accessible:
+Once the Docker image is built, run it with your environment variables, ensuring that the key files are accessible:
 
 ```
 docker run --env-file .env --volume /path/to/aiven_keys:/keys:ro pkoryzna/statconsumer:0.1
@@ -161,17 +162,17 @@ on compilation.
 
 ## Tests
 
-To run unit tests, run `sbt test`.
+To run the unit tests, run `sbt test`.
 
-Integration tests can be run using `scripts/intergration_test`. 
+Included integration tests can be run using `scripts/intergration_test`. 
 Note that you'll need Docker Compose installed to bring up the test dependencies.
 
 ## Misc. notes
 
 ### Why read config from env vars in Consumer but not in Producer?
 
-I assumed that Producer would be running as a service on host OS of monitored machine - in this case
-as an administrator you can simply place your config somewhere on filesystem (e.g. `/etc`) and
+I assumed that Producer would be running as a service on host OS of monitored machine - in this case,
+as an administrator you can simply place your config somewhere on the file system (e.g. `/etc`) and
 use your favorite init system to launch the app.
 
 On the opposite end, I assumed Consumer will run in a Docker container somewhere in the cloud on Kubernetes,
@@ -188,7 +189,7 @@ See Lightbend Config docs for more details https://github.com/lightbend/config#s
 
 In general, I would describe current state of the project as _quite decent first sprint_ ;-)
 
-- Producer app collects only two statistics: number of processes running, and available system memory.
+- Producer app collects only two statistics: the number of processes running, and available system memory.
   In a real production system I'd add more stats and provide a way to select the values that user wants sent
   to Kafka;
 
